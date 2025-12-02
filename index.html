@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f110c" />
+    <meta name="description" content="Voice_Link - An immersive, real-time voice transcription app with Silent Hill aesthetics" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Preload fonts for faster rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Syne+Mono&display=swap" rel="stylesheet" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <title>Voice_Link | Silent Hill Transcriber</title>
+    
+    <!-- Critical CSS for instant load feel -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body, #root {
+        height: 100%;
+        width: 100%;
+        background-color: #0f110c;
+        overflow: hidden;
+      }
+      /* GPU acceleration for smooth animations */
+      .gpu-accelerated {
+        transform: translateZ(0);
+        will-change: transform, opacity;
+        backface-visibility: hidden;
+        perspective: 1000px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

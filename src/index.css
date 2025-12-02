@@ -1,0 +1,278 @@
+/* Font imports - must be first */
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Syne+Mono&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles optimized for performance */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  /* Enable smooth scrolling but don't force it */
+  scroll-behavior: smooth;
+  /* Improve text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: #0f110c;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1c15;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3e4a2e;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5c6e3b;
+}
+
+/* Hide scrollbar while maintaining functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* GPU Acceleration Layer - Critical for 60+ FPS */
+@layer utilities {
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  .contain-paint {
+    contain: paint;
+  }
+  
+  .contain-layout {
+    contain: layout;
+  }
+  
+  .contain-strict {
+    contain: strict;
+  }
+}
+
+/* Font families */
+.font-silent {
+  font-family: 'Special Elite', cursive;
+}
+
+.font-hud {
+  font-family: 'Syne Mono', monospace;
+}
+
+/* CRT Overlay Effect - Optimized */
+.crt-overlay {
+  background: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  will-change: auto;
+}
+
+/* Scanline animation - GPU accelerated */
+.scanline-bar {
+  background: linear-gradient(to bottom, transparent, rgba(124, 143, 75, 0.2), transparent);
+  animation: scanline 8s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Dark matter pattern - CSS-based alternative to external texture */
+.dark-matter-pattern {
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(30, 35, 25, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(25, 30, 20, 0.6) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(20, 25, 15, 0.4) 0%, transparent 60%),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(30, 35, 25, 0.1) 2px,
+      rgba(30, 35, 25, 0.1) 4px
+    );
+  background-size: 100% 100%, 100% 100%, 100% 100%, 8px 8px;
+}
+
+/* Noise background - Optimized for performance */
+.noise-bg {
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.1'/%3E%3C/svg%3E");
+  animation: grain 8s steps(10) infinite;
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 10;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Vignette effect */
+.vignette {
+  background: radial-gradient(circle, transparent 50%, black 100%);
+  pointer-events: none;
+}
+
+/* High refresh rate optimization */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-smooth {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Responsive typography scaling */
+/* Mobile phones (16:9 and 20:9) */
+@media screen and (max-width: 767px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Tablets and small laptops */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* Standard desktops (16:9) */
+@media screen and (min-width: 1024px) and (max-width: 1919px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* Large desktops and ultrawide (1920p+) */
+@media screen and (min-width: 1920px) and (max-width: 2559px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* 4K and ultrawide displays */
+@media screen and (min-width: 2560px) {
+  html {
+    font-size: 20px;
+  }
+}
+
+/* Tall phone screens (20:9 aspect ratio like Samsung Galaxy) */
+@media screen and (max-width: 767px) and (min-aspect-ratio: 9/19) {
+  .tall-screen-padding {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}
+
+/* Ultrawide monitors (21:9) */
+@media screen and (min-aspect-ratio: 21/9) {
+  .ultrawide-container {
+    max-width: 70vw;
+    margin: 0 auto;
+  }
+}
+
+/* Safe area for notched devices */
+@supports (padding: max(0px)) {
+  .safe-area-padding {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Animation keyframes */
+@keyframes scanline {
+  0% { transform: translateY(-100%) translateZ(0); }
+  100% { transform: translateY(100%) translateZ(0); }
+}
+
+@keyframes flicker {
+  0% { opacity: 0.95; }
+  5% { opacity: 0.8; }
+  10% { opacity: 0.9; }
+  15% { opacity: 0.3; }
+  20% { opacity: 0.95; }
+  50% { opacity: 0.9; }
+  55% { opacity: 0.6; }
+  60% { opacity: 0.95; }
+  100% { opacity: 0.95; }
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0) translateZ(0); }
+  10% { transform: translate(-5%, -10%) translateZ(0); }
+  20% { transform: translate(-15%, 5%) translateZ(0); }
+  30% { transform: translate(7%, -25%) translateZ(0); }
+  40% { transform: translate(-5%, 25%) translateZ(0); }
+  50% { transform: translate(-15%, 10%) translateZ(0); }
+  60% { transform: translate(15%, 0%) translateZ(0); }
+  70% { transform: translate(0%, 15%) translateZ(0); }
+  80% { transform: translate(3%, 35%) translateZ(0); }
+  90% { transform: translate(-10%, 10%) translateZ(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { text-shadow: 0 0 10px #7c8f4b, 0 0 20px #7c8f4b; }
+  50% { text-shadow: 0 0 20px #a3bd63, 0 0 30px #a3bd63; }
+}
+
+/* Text selection */
+::selection {
+  background-color: #4a5d23;
+  color: white;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid #8fa860;
+  outline-offset: 2px;
+}
+
+/* Touch optimization for mobile */
+@media (hover: none) and (pointer: coarse) {
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

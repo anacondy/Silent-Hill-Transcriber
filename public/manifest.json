@@ -1,0 +1,20 @@
+{
+  "name": "Voice_Link",
+  "short_name": "VoiceLink",
+  "description": "An immersive, real-time voice transcription app with Silent Hill aesthetics",
+  "start_url": "/Silent-Hill-Transcriber/",
+  "display": "standalone",
+  "background_color": "#0f110c",
+  "theme_color": "#8fa860",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/Silent-Hill-Transcriber/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity"],
+  "lang": "en-US"
+}
