@@ -168,7 +168,7 @@ const App = () => {
 
       {/* --- BACKGROUND LAYERS --- GPU Accelerated */}
       <div className="absolute inset-0 bg-gradient-to-b from-sh-bg-sludge via-sh-bg-dark to-black z-0 gpu-accelerated"></div>
-      <div className="absolute inset-0 opacity-30 z-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] mix-blend-overlay gpu-accelerated"></div>
+      <div className="absolute inset-0 opacity-30 z-0 dark-matter-pattern mix-blend-overlay gpu-accelerated"></div>
       <div className="noise-bg mix-blend-overlay gpu-accelerated"></div>
       <div className="absolute inset-0 crt-overlay z-20 gpu-accelerated"></div>
       <div className="absolute inset-0 scanline-bar z-20 pointer-events-none h-32 w-full gpu-accelerated"></div>

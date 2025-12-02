@@ -107,7 +107,7 @@ Vite configuration for minimal bundle:
 
 ```javascript
 build: {
-  minify: 'terser',
+  minify: 'esbuild',
   cssMinify: true,
   rollupOptions: {
     output: {
