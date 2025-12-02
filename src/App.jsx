@@ -1,0 +1,314 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Mic, MicOff, Activity, Wifi, Battery, Menu, Copy, Check } from 'lucide-react';
+
+const App = () => {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [error, setError] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
+  const recognitionRef = useRef(null);
+  const bottomRef = useRef(null);
+  const isListeningRef = useRef(isListening);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setError('');
+      };
+
+      recognition.onend = () => {
+        // Use ref instead of state to get current value
+        if (isListeningRef.current) {
+          try {
+            recognition.start();
+          } catch (e) {
+            setIsListening(false);
+          }
+        } else {
+          setIsListening(false);
+        }
+      };
+
+      recognition.onresult = (event) => {
+        let finalTranscriptChunk = '';
+        let interimTranscriptChunk = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcriptText = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscriptChunk += transcriptText + ' ';
+          } else {
+            interimTranscriptChunk += transcriptText;
+          }
+        }
+
+        if (finalTranscriptChunk) {
+          setTranscript((prev) => prev + finalTranscriptChunk);
+        }
+        setInterimTranscript(interimTranscriptChunk);
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        if (event.error === 'not-allowed') {
+          setError('Microphone access denied.');
+          setIsListening(false);
+        }
+      };
+
+      recognitionRef.current = recognition;
+    } else {
+      setError('Browser not supported. Use Chrome or Safari.');
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  // Scroll to bottom on new text - optimized with requestAnimationFrame
+  useEffect(() => {
+    if (bottomRef.current) {
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+  }, [transcript, interimTranscript]);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      isListeningRef.current = false;
+      setIsListening(false);
+      recognitionRef.current?.stop();
+    } else {
+      isListeningRef.current = true;
+      setIsListening(true);
+      setTranscript('');
+      recognitionRef.current?.start();
+    }
+  }, [isListening]);
+
+  const copyToClipboard = useCallback(() => {
+    if (!transcript && !interimTranscript) return;
+
+    const textToCopy = transcript + interimTranscript;
+
+    // Use modern clipboard API with fallback
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      }).catch(() => {
+        // Fallback to execCommand
+        fallbackCopy(textToCopy);
+      });
+    } else {
+      fallbackCopy(textToCopy);
+    }
+  }, [transcript, interimTranscript]);
+
+  const fallbackCopy = (text) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } else {
+        setError('Copy failed.');
+      }
+    } catch (err) {
+      setError('Copy failed.');
+    }
+
+    document.body.removeChild(textArea);
+  };
+
+  // Memoized visualizer bars for performance
+  const visualizerBars = useMemo(() => {
+    return Array.from({ length: 20 }).map((_, i) => (
+      <div
+        key={i}
+        className="w-1 bg-sh-metal gpu-accelerated"
+        style={{
+          height: `${Math.random() * 100}%`,
+          transition: 'height 0.1s ease'
+        }}
+      />
+    ));
+  }, [isListening]);
+
+  return (
+    <div className="relative min-h-screen w-full bg-black overflow-hidden font-mono selection:bg-[#4a5d23] selection:text-white contain-layout">
+
+      {/* --- BACKGROUND LAYERS --- GPU Accelerated */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sh-bg-sludge via-sh-bg-dark to-black z-0 gpu-accelerated"></div>
+      <div className="absolute inset-0 opacity-30 z-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] mix-blend-overlay gpu-accelerated"></div>
+      <div className="noise-bg mix-blend-overlay gpu-accelerated"></div>
+      <div className="absolute inset-0 crt-overlay z-20 gpu-accelerated"></div>
+      <div className="absolute inset-0 scanline-bar z-20 pointer-events-none h-32 w-full gpu-accelerated"></div>
+      <div className="absolute inset-0 vignette z-20 pointer-events-none"></div>
+
+      {/* --- MAIN UI CONTAINER --- */}
+      <div className="relative z-30 flex flex-col h-screen max-w-7xl mx-auto p-3 xs:p-4 md:p-8 lg:p-12 3xl:max-w-[80rem] 4xl:max-w-[100rem] safe-area-padding">
+        
+        {/* HEADER */}
+        <header className="flex justify-between items-center mb-4 md:mb-6 border-b border-sh-accent pb-3 md:pb-4 animate-flicker gpu-accelerated">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            <Menu className="text-sh-metal w-5 h-5 md:w-6 md:h-6" />
+            <h1 className="text-lg xs:text-xl md:text-2xl lg:text-3xl 3xl:text-4xl font-silent text-sh-primary tracking-widest uppercase" style={{ textShadow: '0 0 8px #5c6e3b' }}>
+              Voice_Link<span className="animate-pulse">_</span>
+            </h1>
+          </div>
+          <div className="flex items-center space-x-2 md:space-x-4 font-hud text-sh-metal text-2xs xs:text-xs md:text-sm lg:text-base">
+            <div className="flex items-center space-x-1">
+              <Wifi className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="hidden xs:inline">CONN: OK</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Battery className="w-3 h-3 md:w-4 md:h-4" />
+              <span>98%</span>
+            </div>
+            <span className="hidden lg:inline text-xs border border-sh-accent px-2 py-1">SYS.VER.2.0.4</span>
+          </div>
+        </header>
+
+        {/* TRANSCRIPT DISPLAY AREA */}
+        <main className="flex-1 overflow-y-auto mb-4 md:mb-6 relative scrollbar-hide contain-paint">
+          <div className="min-h-full flex flex-col justify-end">
+            {transcript === '' && interimTranscript === '' && !isListening ? (
+              <div className="flex flex-col items-center justify-center h-full text-[#4a5c36] opacity-60 text-center space-y-3 md:space-y-4 px-4">
+                <p className="font-hud text-sm md:text-lg tracking-widest uppercase">System Standby...</p>
+                <p className="font-silent text-xs md:text-sm max-w-md">"In my restless dreams, I see that town... Awaiting input signal."</p>
+              </div>
+            ) : (
+              <div className="space-y-2 p-2">
+                <p className="font-silent text-sh-primary text-base xs:text-lg md:text-2xl lg:text-3xl 3xl:text-4xl 4xl:text-5xl leading-relaxed whitespace-pre-wrap drop-shadow-md">
+                  {transcript}
+                  <span className="text-sh-interim animate-pulse transition-all duration-75 border-b-2 border-sh-metal">
+                    {interimTranscript}
+                  </span>
+                  <span className="inline-block w-1.5 md:w-2 h-5 md:h-6 lg:h-8 bg-sh-primary ml-1 animate-flicker-fast align-middle gpu-accelerated"></span>
+                </p>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        </main>
+
+        {/* ERROR MESSAGE */}
+        {error && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 border border-red-900 p-4 md:p-6 text-red-600 font-hud uppercase tracking-widest z-50 backdrop-blur-sm shadow-lg shadow-red-900/20 text-xs md:text-sm">
+            Warning: {error}
+          </div>
+        )}
+
+        {/* CONTROLS FOOTER */}
+        <footer className="relative mt-auto pt-4 md:pt-6 border-t border-sh-accent tall-screen-padding">
+          
+          {/* Audio Visualizer */}
+          <div className="absolute -top-3 left-0 w-full flex justify-center items-end space-x-0.5 md:space-x-1 h-4 md:h-6 pointer-events-none opacity-50">
+            {isListening && visualizerBars}
+          </div>
+
+          <div className="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0">
+            
+            {/* 1. Status Indicator */}
+            <div className="flex items-center space-x-2 md:space-x-3 font-hud text-sh-metal w-full md:w-auto justify-center md:justify-start">
+              <Activity className={`w-4 h-4 md:w-5 md:h-5 ${isListening ? 'animate-bounce text-sh-glow' : 'opacity-50'}`} />
+              <span className="uppercase tracking-widest text-2xs xs:text-xs md:text-sm">
+                Status: {isListening ? <span className="text-sh-glow">Transmitting...</span> : 'Idle'}
+              </span>
+            </div>
+
+            {/* 2. Main Controls Group (Mic + Copy) */}
+            <div className="flex items-center space-x-4 md:space-x-6">
+              
+              {/* Record Button */}
+              <button
+                onClick={toggleListening}
+                className={`
+                  group relative flex items-center justify-center w-14 h-14 xs:w-16 xs:h-16 md:w-20 md:h-20 rounded-full 
+                  border-2 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-sh-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black
+                  gpu-accelerated
+                  ${isListening 
+                    ? 'border-sh-glow bg-[#2a331e] shadow-[0_0_30px_rgba(163,189,99,0.3)]' 
+                    : 'border-sh-accent bg-black hover:border-sh-metal hover:bg-sh-bg-sludge'}
+                `}
+                aria-label={isListening ? 'Stop recording' : 'Start recording'}
+              >
+                <div className={`
+                  absolute inset-0 rounded-full border border-sh-metal opacity-30 
+                  ${isListening ? 'animate-ping' : 'hidden'}
+                `}></div>
+                
+                {isListening ? (
+                  <Mic className="w-6 h-6 xs:w-8 xs:h-8 md:w-10 md:h-10 text-sh-glow" />
+                ) : (
+                  <MicOff className="w-6 h-6 xs:w-8 xs:h-8 md:w-10 md:h-10 text-sh-accent group-hover:text-sh-metal transition-colors" />
+                )}
+              </button>
+
+              {/* Copy Button */}
+              <button
+                onClick={copyToClipboard}
+                disabled={!transcript && !interimTranscript}
+                className={`
+                  relative flex items-center justify-center w-10 h-10 xs:w-12 xs:h-12 rounded-full border border-sh-accent
+                  bg-black hover:bg-sh-bg-sludge hover:border-sh-metal transition-all duration-300
+                  disabled:opacity-30 disabled:cursor-not-allowed
+                  focus-visible:ring-2 focus-visible:ring-sh-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black
+                  gpu-accelerated
+                  ${isCopied ? 'border-sh-glow shadow-[0_0_15px_rgba(163,189,99,0.2)]' : ''}
+                `}
+                aria-label="Copy transcript"
+                title="Copy to clipboard"
+              >
+                {isCopied ? (
+                  <Check className="w-4 h-4 xs:w-5 xs:h-5 text-sh-glow" />
+                ) : (
+                  <Copy className="w-4 h-4 xs:w-5 xs:h-5 text-sh-metal" />
+                )}
+              </button>
+            </div>
+
+            {/* 3. Language/Meta Info */}
+            <div className="text-center md:text-right font-hud text-sh-accent text-2xs xs:text-xs md:text-sm w-full md:w-auto flex flex-col items-center md:items-end">
+              <p>INPUT: AUTO_DETECT</p>
+              <p>LATENCY: 12ms</p>
+            </div>
+
+          </div>
+        </footer>
+      </div>
+      
+    </div>
+  );
+};
+
+export default App;

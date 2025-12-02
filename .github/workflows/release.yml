@@ -1,0 +1,255 @@
+name: Build Releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v2.0.4)'
+        required: true
+        default: 'v2.0.4'
+
+permissions:
+  contents: write
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web version
+        run: npm run build
+
+      - name: Create web archive
+        run: |
+          cd dist
+          zip -r ../voice-link-web.zip .
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: voice-link-web.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for Windows
+        run: npm run build
+
+      - name: Create Windows package
+        run: |
+          Compress-Archive -Path dist\* -DestinationPath voice-link-windows.zip
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: voice-link-windows.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for Linux
+        run: npm run build
+
+      - name: Create Linux package
+        run: |
+          cd dist
+          tar -czvf ../voice-link-linux.tar.gz .
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: voice-link-linux.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for macOS
+        run: npm run build
+
+      - name: Create macOS package
+        run: |
+          cd dist
+          zip -r ../voice-link-macos.zip .
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: voice-link-macos.zip
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Capacitor
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Initialize Capacitor
+        run: |
+          npx cap init "VoiceLink" "com.voicelink.app" --web-dir=dist
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Rename APK
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk voice-link-android.apk
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: voice-link-android.apk
+
+  create-release:
+    needs: [build-web, build-windows, build-linux, build-macos, build-android]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: Voice_Link ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/web-build/voice-link-web.zip
+            artifacts/windows-build/voice-link-windows.zip
+            artifacts/linux-build/voice-link-linux.tar.gz
+            artifacts/macos-build/voice-link-macos.zip
+            artifacts/android-build/voice-link-android.apk
+          body: |
+            ## Voice_Link ${{ steps.get_version.outputs.VERSION }}
+            
+            An immersive, real-time voice transcription app with Silent Hill aesthetics.
+            
+            ### Downloads
+            
+            | Platform | File | Description |
+            |----------|------|-------------|
+            | 🌐 Web | `voice-link-web.zip` | Static web files - host anywhere |
+            | 🪟 Windows | `voice-link-windows.zip` | Windows build - extract and open index.html |
+            | 🐧 Linux | `voice-link-linux.tar.gz` | Linux build - extract and open index.html |
+            | 🍎 macOS | `voice-link-macos.zip` | macOS build - extract and open index.html |
+            | 📱 Android | `voice-link-android.apk` | Android APK - install directly on device |
+            
+            ### Installation Instructions
+            
+            #### Web (All Platforms)
+            1. Download `voice-link-web.zip`
+            2. Extract the contents
+            3. Open `index.html` in Chrome or Safari
+            
+            #### Android
+            1. Download `voice-link-android.apk`
+            2. Enable "Install from unknown sources" in Settings
+            3. Open the APK file to install
+            4. Grant microphone permissions when prompted
+            
+            #### Desktop (Windows/Linux/macOS)
+            1. Download the appropriate archive for your platform
+            2. Extract the contents
+            3. Open `index.html` in Chrome or Edge
+            4. Or serve locally with any HTTP server
+            
+            ### Live Demo
+            Visit: https://anacondy.github.io/Silent-Hill-Transcriber/
