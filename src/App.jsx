@@ -1,15 +1,43 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Mic, MicOff, Activity, Wifi, WifiOff, Signal, Battery, BatteryLow, BatteryMedium, BatteryFull, BatteryCharging, Menu, Copy, Check } from 'lucide-react';
+import { Mic, MicOff, Activity, Wifi, WifiOff, Signal, Battery, BatteryLow, BatteryMedium, BatteryFull, BatteryCharging, Menu, Copy, Check, Languages, X } from 'lucide-react';
 
 // Detect Firefox browser once at module level
 const isFirefoxBrowser = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+// Supported languages for translation
+const SUPPORTED_LANGUAGES = [
+  { code: 'en', name: 'English', native: 'English' },
+  { code: 'es', name: 'Spanish', native: 'Español' },
+  { code: 'fr', name: 'French', native: 'Français' },
+  { code: 'de', name: 'German', native: 'Deutsch' },
+  { code: 'it', name: 'Italian', native: 'Italiano' },
+  { code: 'pt', name: 'Portuguese', native: 'Português' },
+  { code: 'ru', name: 'Russian', native: 'Русский' },
+  { code: 'ja', name: 'Japanese', native: '日本語' },
+  { code: 'ko', name: 'Korean', native: '한국어' },
+  { code: 'zh', name: 'Chinese', native: '中文' },
+  { code: 'ar', name: 'Arabic', native: 'العربية' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+  { code: 'nl', name: 'Dutch', native: 'Nederlands' },
+  { code: 'pl', name: 'Polish', native: 'Polski' },
+  { code: 'tr', name: 'Turkish', native: 'Türkçe' },
+  { code: 'vi', name: 'Vietnamese', native: 'Tiếng Việt' },
+  { code: 'th', name: 'Thai', native: 'ไทย' },
+  { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia' },
+];
 
 const App = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [translatedTranscript, setTranslatedTranscript] = useState('');
   const [error, setError] = useState('');
   const [isCopied, setIsCopied] = useState(false);
+  
+  // Translation state
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState(null); // null means no translation
+  const [isTranslating, setIsTranslating] = useState(false);
   
   // Dynamic system status
   const [batteryLevel, setBatteryLevel] = useState(100);
@@ -22,6 +50,8 @@ const App = () => {
   const isListeningRef = useRef(isListening);
   const lastResultTimeRef = useRef(0);
   const processedResultsRef = useRef(new Set());
+  const lastProcessedTextRef = useRef('');
+  const languageMenuRef = useRef(null);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -111,6 +141,7 @@ const App = () => {
         setIsListening(true);
         setError('');
         processedResultsRef.current.clear();
+        lastProcessedTextRef.current = '';
       };
 
       recognition.onend = () => {
@@ -141,16 +172,20 @@ const App = () => {
         // Process only new results to prevent duplicates
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
-          const transcriptText = result[0].transcript;
-          const resultId = `${i}-${result.isFinal}-${transcriptText.slice(0, 20)}`;
+          const transcriptText = result[0].transcript.trim();
           
-          if (result.isFinal) {
-            // Check if we've already processed this final result
-            if (!processedResultsRef.current.has(resultId)) {
-              processedResultsRef.current.add(resultId);
+          if (result.isFinal && transcriptText) {
+            // Create a unique hash based on text content and position
+            const textHash = `${transcriptText.toLowerCase().replace(/\s+/g, ' ')}`;
+            
+            // Check if this exact text was already processed
+            if (!processedResultsRef.current.has(textHash) && 
+                textHash !== lastProcessedTextRef.current) {
+              processedResultsRef.current.add(textHash);
+              lastProcessedTextRef.current = textHash;
               finalTranscriptChunk += transcriptText + ' ';
             }
-          } else {
+          } else if (!result.isFinal) {
             interimTranscriptChunk = transcriptText;
           }
         }
@@ -206,7 +241,73 @@ const App = () => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
       });
     }
-  }, [transcript, interimTranscript]);
+  }, [transcript, interimTranscript, translatedTranscript]);
+
+  // Close language menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target)) {
+        setShowLanguageMenu(false);
+      }
+    };
+    
+    if (showLanguageMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showLanguageMenu]);
+
+  // Translation function using free LibreTranslate API
+  const translateText = useCallback(async (text, targetLang) => {
+    if (!text || !targetLang || targetLang === 'en') {
+      setTranslatedTranscript('');
+      return;
+    }
+    
+    setIsTranslating(true);
+    
+    try {
+      // Use MyMemory Translation API (free, no API key required)
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.responseStatus === 200 && data.responseData?.translatedText) {
+          setTranslatedTranscript(data.responseData.translatedText);
+        } else {
+          // Fallback: show original text if translation fails
+          setTranslatedTranscript('');
+        }
+      } else {
+        setTranslatedTranscript('');
+      }
+    } catch (err) {
+      console.error('Translation error:', err);
+      setTranslatedTranscript('');
+    } finally {
+      setIsTranslating(false);
+    }
+  }, []);
+
+  // Auto-translate when transcript changes
+  useEffect(() => {
+    if (targetLanguage && transcript) {
+      const timeoutId = setTimeout(() => {
+        translateText(transcript, targetLanguage);
+      }, 500); // Debounce translation requests
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      setTranslatedTranscript('');
+    }
+  }, [transcript, targetLanguage, translateText]);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -218,17 +319,35 @@ const App = () => {
       setIsListening(true);
       setTranscript('');
       setInterimTranscript('');
+      setTranslatedTranscript('');
       setLatency(0);
       lastResultTimeRef.current = 0;
       processedResultsRef.current.clear();
+      lastProcessedTextRef.current = '';
       recognitionRef.current?.start();
     }
   }, [isListening]);
 
+  const handleLanguageSelect = useCallback((langCode) => {
+    // If selecting the same language or null, disable translation
+    const newLang = langCode === targetLanguage ? null : langCode;
+    setTargetLanguage(newLang);
+    setShowLanguageMenu(false);
+    if (!newLang) {
+      setTranslatedTranscript('');
+    }
+  }, [targetLanguage]);
+
+  // Simple click handler for translate button - just toggle menu
+  const handleTranslateClick = useCallback(() => {
+    setShowLanguageMenu((prev) => !prev);
+  }, []);
+
   const copyToClipboard = useCallback(() => {
     if (!transcript && !interimTranscript) return;
 
-    const textToCopy = transcript + interimTranscript;
+    // Copy translated text if available, otherwise original
+    const textToCopy = translatedTranscript || (transcript + interimTranscript);
 
     // Use modern clipboard API with fallback
     if (navigator.clipboard && window.isSecureContext) {
@@ -242,7 +361,7 @@ const App = () => {
     } else {
       fallbackCopy(textToCopy);
     }
-  }, [transcript, interimTranscript]);
+  }, [transcript, interimTranscript, translatedTranscript]);
 
   const fallbackCopy = (text) => {
     const textArea = document.createElement("textarea");
@@ -372,7 +491,8 @@ const App = () => {
                 )}
               </div>
             ) : (
-              <div className="space-y-2 p-2">
+              <div className="space-y-4 p-2">
+                {/* Original transcript */}
                 <p className="font-silent text-sh-primary-bright text-lg xs:text-xl md:text-3xl lg:text-4xl 3xl:text-5xl 4xl:text-6xl leading-relaxed whitespace-pre-wrap transcript-text" style={{ textShadow: '0 0 8px rgba(143, 168, 96, 0.5)' }}>
                   {transcript}
                   <span className="text-sh-interim-bright border-b-2 border-sh-metal-bright interim-text">
@@ -380,6 +500,19 @@ const App = () => {
                   </span>
                   <span className="inline-block w-2 md:w-3 h-6 md:h-8 lg:h-10 bg-sh-primary-bright ml-1 animate-flicker-fast align-middle gpu-accelerated cursor-blink"></span>
                 </p>
+                
+                {/* Translated transcript */}
+                {targetLanguage && translatedTranscript && (
+                  <div className="border-t border-sh-accent-bright pt-4 mt-4">
+                    <p className="font-hud text-xs text-sh-metal-bright uppercase tracking-wider mb-2">
+                      Translation ({SUPPORTED_LANGUAGES.find(l => l.code === targetLanguage)?.name}):
+                    </p>
+                    <p className="font-silent text-sh-glow-bright text-base xs:text-lg md:text-2xl lg:text-3xl 3xl:text-4xl leading-relaxed whitespace-pre-wrap" style={{ textShadow: '0 0 6px rgba(197, 224, 128, 0.4)' }}>
+                      {translatedTranscript}
+                      {isTranslating && <span className="animate-pulse ml-2">...</span>}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             <div ref={bottomRef} className="h-1" />
@@ -411,8 +544,71 @@ const App = () => {
               </span>
             </div>
 
-            {/* 2. Main Controls Group (Mic + Copy) */}
-            <div className="flex items-center space-x-4 md:space-x-6">
+            {/* 2. Main Controls Group (Translate + Mic + Copy) */}
+            <div className="flex items-center space-x-3 md:space-x-5">
+              
+              {/* Translate Button with Language Menu */}
+              <div className="relative" ref={languageMenuRef}>
+                <button
+                  onClick={handleTranslateClick}
+                  className={`
+                    relative flex items-center justify-center w-12 h-12 xs:w-14 xs:h-14 md:w-16 md:h-16 rounded-full border
+                    bg-black hover:bg-sh-bg-sludge transition-all duration-300
+                    focus-visible:ring-2 focus-visible:ring-sh-primary-bright focus-visible:ring-offset-2 focus-visible:ring-offset-black
+                    gpu-accelerated touch-manipulation active:scale-95
+                    ${targetLanguage 
+                      ? 'border-sh-glow-bright shadow-[0_0_15px_rgba(179,209,115,0.3)]' 
+                      : 'border-sh-accent-bright hover:border-sh-metal-bright'}
+                  `}
+                  aria-label="Translate text"
+                  title={targetLanguage ? `Translating to ${SUPPORTED_LANGUAGES.find(l => l.code === targetLanguage)?.name}` : 'Click to select language'}
+                >
+                  <Languages className={`w-5 h-5 xs:w-6 xs:h-6 md:w-7 md:h-7 ${targetLanguage ? 'text-sh-glow-bright' : 'text-sh-metal-bright'}`} />
+                  {targetLanguage && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-sh-glow-bright rounded-full text-[8px] text-black font-bold flex items-center justify-center uppercase">
+                      {targetLanguage}
+                    </span>
+                  )}
+                </button>
+                
+                {/* Language Selection Menu */}
+                {showLanguageMenu && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 max-h-64 overflow-y-auto bg-black/95 border border-sh-accent-bright rounded-lg shadow-xl z-50 backdrop-blur-sm">
+                    <div className="sticky top-0 bg-black/95 border-b border-sh-accent-bright p-2 flex justify-between items-center">
+                      <span className="font-hud text-xs text-sh-metal-bright uppercase">Select Language</span>
+                      <button 
+                        onClick={() => setShowLanguageMenu(false)}
+                        className="text-sh-metal-bright hover:text-sh-glow-bright"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="p-1">
+                      {/* No translation option */}
+                      <button
+                        onClick={() => handleLanguageSelect(null)}
+                        className={`w-full text-left px-3 py-2 text-sm font-hud rounded hover:bg-sh-bg-sludge transition-colors ${
+                          !targetLanguage ? 'text-sh-glow-bright bg-sh-bg-sludge' : 'text-sh-metal-bright'
+                        }`}
+                      >
+                        No Translation
+                      </button>
+                      {SUPPORTED_LANGUAGES.map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => handleLanguageSelect(lang.code)}
+                          className={`w-full text-left px-3 py-2 text-sm font-hud rounded hover:bg-sh-bg-sludge transition-colors ${
+                            targetLanguage === lang.code ? 'text-sh-glow-bright bg-sh-bg-sludge' : 'text-sh-metal-bright'
+                          }`}
+                        >
+                          <span className="mr-2">{lang.native}</span>
+                          <span className="text-xs opacity-60">({lang.name})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               
               {/* Record Button */}
               <button
@@ -466,6 +662,9 @@ const App = () => {
             <div className="text-center md:text-right font-hud text-sh-accent-bright text-xs xs:text-sm md:text-base lg:text-lg w-full md:w-auto flex flex-col items-center md:items-end">
               <p>INPUT: AUTO_DETECT</p>
               <p>LATENCY: {latency > 0 ? `${latency}ms` : '--'}</p>
+              {targetLanguage && (
+                <p className="text-sh-glow-bright">TRANSLATE: {targetLanguage.toUpperCase()}</p>
+              )}
             </div>
 
           </div>
