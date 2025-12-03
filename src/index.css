@@ -105,11 +105,11 @@ html, body, #root {
   font-family: 'Syne Mono', monospace;
 }
 
-/* CRT Overlay Effect - Optimized */
+/* CRT Overlay Effect - Optimized and reduced for better readability */
 .crt-overlay {
   background: 
-    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
   background-size: 100% 2px, 3px 100%;
   pointer-events: none;
   will-change: auto;
@@ -140,7 +140,7 @@ html, body, #root {
   background-size: 100% 100%, 100% 100%, 100% 100%, 8px 8px;
 }
 
-/* Noise background - Optimized for performance on all devices */
+/* Noise background - Optimized for performance on all devices - reduced for better visibility */
 .noise-bg {
   position: fixed;
   top: -50%;
@@ -149,7 +149,7 @@ html, body, #root {
   height: 200%;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.1'/%3E%3C/svg%3E");
   animation: grain 8s steps(10) infinite;
-  opacity: 0.15;
+  opacity: 0.08;
   pointer-events: none;
   z-index: 10;
   will-change: transform;
@@ -157,9 +157,9 @@ html, body, #root {
   -webkit-transform: translateZ(0);
 }
 
-/* Vignette effect */
+/* Vignette effect - reduced intensity for better visibility */
 .vignette {
-  background: radial-gradient(circle, transparent 50%, black 100%);
+  background: radial-gradient(circle, transparent 60%, rgba(0, 0, 0, 0.7) 100%);
   pointer-events: none;
 }
 

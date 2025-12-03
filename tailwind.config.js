@@ -7,6 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Original darker colors (kept for compatibility)
         'sh-primary': '#8fa860',
         'sh-interim': '#cce899',
         'sh-bg-dark': '#0f110c',
@@ -14,6 +15,13 @@ export default {
         'sh-accent': '#3e4a2e',
         'sh-metal': '#5c6e3b',
         'sh-glow': '#a3bd63',
+        // Brighter versions for better visibility
+        'sh-primary-bright': '#b3d173',
+        'sh-interim-bright': '#e0ffaa',
+        'sh-accent-bright': '#5a6b44',
+        'sh-metal-bright': '#7c9454',
+        'sh-glow-bright': '#c5e080',
+        'sh-standby': '#7a9456',
       },
       fontFamily: {
         'silent': ['"Special Elite"', 'cursive'],
