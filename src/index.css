@@ -24,8 +24,9 @@ html {
 }
 
 html, body, #root {
-  height: 100%;
-  /* Support for iOS dynamic viewport height (dvh) */
+  /* Fallback for older browsers */
+  height: 100vh;
+  /* Modern browsers with dvh support */
   height: 100dvh;
   width: 100%;
   overflow: hidden;

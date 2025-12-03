@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Mic, MicOff, Activity, Wifi, Battery, Menu, Copy, Check } from 'lucide-react';
 
+// Detect Firefox browser once at module level
+const isFirefoxBrowser = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
 const App = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState('');
   const [isCopied, setIsCopied] = useState(false);
-  const [isFirefox, setIsFirefox] = useState(false);
   const recognitionRef = useRef(null);
   const bottomRef = useRef(null);
   const transcriptContainerRef = useRef(null);
@@ -17,12 +19,6 @@ const App = () => {
   useEffect(() => {
     isListeningRef.current = isListening;
   }, [isListening]);
-
-  // Detect Firefox browser
-  useEffect(() => {
-    const isFirefoxBrowser = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-    setIsFirefox(isFirefoxBrowser);
-  }, []);
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -35,7 +31,7 @@ const App = () => {
       recognition.lang = 'en-US';
       
       // Firefox-specific handling
-      if (isFirefox) {
+      if (isFirefoxBrowser) {
         recognition.continuous = false;
         recognition.interimResults = false;
       }
@@ -84,7 +80,7 @@ const App = () => {
           setIsListening(false);
         } else if (event.error === 'no-speech') {
           // Don't show error for no-speech, just continue
-          if (isFirefox && isListeningRef.current) {
+          if (isFirefoxBrowser && isListeningRef.current) {
             try {
               recognition.start();
             } catch (e) {
@@ -113,7 +109,7 @@ const App = () => {
         recognitionRef.current.stop();
       }
     };
-  }, [isFirefox]);
+  }, []);
 
   // Scroll to bottom on new text - optimized with requestAnimationFrame
   useEffect(() => {
@@ -205,7 +201,7 @@ const App = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen min-h-dvh w-full bg-black overflow-hidden font-mono selection:bg-[#4a5d23] selection:text-white contain-layout">
+    <div className="relative min-h-screen w-full bg-black overflow-hidden font-mono selection:bg-[#4a5d23] selection:text-white contain-layout supports-[height:100dvh]:min-h-dvh">
 
       {/* --- BACKGROUND LAYERS --- GPU Accelerated */}
       <div className="absolute inset-0 bg-gradient-to-b from-sh-bg-sludge via-sh-bg-dark to-black z-0 gpu-accelerated"></div>
@@ -216,7 +212,7 @@ const App = () => {
       <div className="absolute inset-0 vignette z-20 pointer-events-none"></div>
 
       {/* --- MAIN UI CONTAINER --- Fixed layout to prevent jumping */}
-      <div className="relative z-30 flex flex-col h-screen h-dvh max-w-7xl mx-auto p-3 xs:p-4 md:p-8 lg:p-12 3xl:max-w-[80rem] 4xl:max-w-[100rem] safe-area-padding">
+      <div className="relative z-30 flex flex-col h-screen max-w-7xl mx-auto p-3 xs:p-4 md:p-8 lg:p-12 3xl:max-w-[80rem] 4xl:max-w-[100rem] safe-area-padding supports-[height:100dvh]:h-dvh">
         
         {/* HEADER - Fixed height */}
         <header className="flex-shrink-0 flex justify-between items-center mb-4 md:mb-6 border-b border-sh-accent pb-3 md:pb-4 animate-flicker gpu-accelerated min-h-[60px] md:min-h-[72px]">
@@ -246,7 +242,7 @@ const App = () => {
               <div className="flex flex-col items-center justify-center h-full text-[#4a5c36] opacity-60 text-center space-y-3 md:space-y-4 px-4">
                 <p className="font-hud text-base md:text-xl lg:text-2xl tracking-widest uppercase">System Standby...</p>
                 <p className="font-silent text-sm md:text-base lg:text-lg max-w-md">"In my restless dreams, I see that town... Awaiting input signal."</p>
-                {isFirefox && (
+                {isFirefoxBrowser && (
                   <p className="font-hud text-xs md:text-sm text-yellow-600 mt-4">⚠️ Firefox has limited speech recognition. Use Chrome or Safari for best experience.</p>
                 )}
               </div>
