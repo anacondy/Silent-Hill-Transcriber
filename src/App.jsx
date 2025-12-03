@@ -159,7 +159,6 @@ const App = () => {
           setTranscript((prev) => prev + finalTranscriptChunk);
         }
         setInterimTranscript(interimTranscriptChunk);
-        setInterimTranscript(interimTranscriptChunk);
       };
 
       recognition.onerror = (event) => {
