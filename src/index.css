@@ -206,12 +206,6 @@ html, body, #root {
   .animate-smooth {
     animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
-  /* Use optimal frame timing for high refresh rate displays */
-  * {
-    /* This improves animation smoothness on ProMotion and other high refresh rate displays */
-    -webkit-font-smoothing: subpixel-antialiased;
-  }
 }
 
 /* Reduced motion for accessibility */

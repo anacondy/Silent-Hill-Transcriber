@@ -12,7 +12,6 @@ const App = () => {
   const [isCopied, setIsCopied] = useState(false);
   const recognitionRef = useRef(null);
   const bottomRef = useRef(null);
-  const transcriptContainerRef = useRef(null);
   const isListeningRef = useRef(isListening);
 
   // Keep ref in sync with state
@@ -120,16 +119,6 @@ const App = () => {
     }
   }, [transcript, interimTranscript]);
 
-  // Maintain stable layout height for transcript container
-  useEffect(() => {
-    if (transcriptContainerRef.current && (transcript || interimTranscript)) {
-      const container = transcriptContainerRef.current;
-      // Lock minimum height to prevent layout jumping
-      const currentHeight = container.scrollHeight;
-      container.style.minHeight = `${Math.max(currentHeight, parseInt(container.style.minHeight || 0))}px`;
-    }
-  }, [transcript, interimTranscript]);
-
   const toggleListening = useCallback(() => {
     if (isListening) {
       isListeningRef.current = false;
@@ -187,18 +176,21 @@ const App = () => {
     document.body.removeChild(textArea);
   };
 
-  // Memoized visualizer bars for performance - no deps needed as it's random
-  const visualizerBars = useMemo(() => {
-    return Array.from({ length: 20 }).map((_, i) => (
-      <div
-        key={i}
-        className="w-1 bg-sh-metal gpu-accelerated visualizer-bar"
-        style={{
-          height: `${Math.random() * 100}%`,
-        }}
-      />
-    ));
+  // Generate static bar heights once - CSS animation handles the visual movement
+  const visualizerBarHeights = useMemo(() => {
+    return Array.from({ length: 20 }).map(() => Math.random() * 100);
   }, []);
+
+  // Visualizer bars with CSS animation
+  const visualizerBars = visualizerBarHeights.map((height, i) => (
+    <div
+      key={i}
+      className="w-1 bg-sh-metal gpu-accelerated visualizer-bar"
+      style={{
+        height: `${height}%`,
+      }}
+    />
+  ));
 
   return (
     <div className="relative min-h-screen w-full bg-black overflow-hidden font-mono selection:bg-[#4a5d23] selection:text-white contain-layout supports-[height:100dvh]:min-h-dvh">
@@ -237,7 +229,7 @@ const App = () => {
 
         {/* TRANSCRIPT DISPLAY AREA - Flex-grow with stable layout */}
         <main className="flex-1 overflow-y-auto mb-4 md:mb-6 relative scrollbar-hide contain-paint transcript-area">
-          <div ref={transcriptContainerRef} className="min-h-full flex flex-col justify-end">
+          <div className="min-h-full flex flex-col justify-end">
             {transcript === '' && interimTranscript === '' && !isListening ? (
               <div className="flex flex-col items-center justify-center h-full text-[#4a5c36] opacity-60 text-center space-y-3 md:space-y-4 px-4">
                 <p className="font-hud text-base md:text-xl lg:text-2xl tracking-widest uppercase">System Standby...</p>
