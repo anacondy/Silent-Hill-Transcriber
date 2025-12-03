@@ -36,14 +36,33 @@ This project serves as a bridge between atmospheric horror aesthetics and functi
 <div align="center">
 
 ### Desktop View (1920×1080)
-![Desktop Idle](https://github.com/user-attachments/assets/79fb1c4d-43c4-4e4f-bc02-dfbeb1ef90fd)
+*Standard desktop/laptop display*
 
-### Mobile View (412×915 - 20:9)
-![Mobile Portrait](https://github.com/user-attachments/assets/e5398448-7065-4bc0-bdb2-c415e0b8e381)
+![Desktop 1920x1080](docs/screenshots/desktop-1920x1080.png)
+
+### Widescreen View (2560×1440)
+*High resolution desktop/monitor*
+
+![Desktop 2560x1440](docs/screenshots/desktop-2560x1440.png)
+
+### Ultrawide View (2560×1080 - 21:9)
+*Ultrawide monitor layout*
+
+![Ultrawide 21:9](docs/screenshots/ultrawide-21-9.png)
+
+### Mobile View - 16:9 (360×640)
+*Standard mobile aspect ratio (older phones)*
+
+![Mobile 16:9](docs/screenshots/mobile-16-9.png)
+
+### Mobile View - 20:9 (412×915)
+*Modern tall mobile display (Samsung Galaxy, most Android)*
+
+![Mobile 20:9](docs/screenshots/mobile-20-9.png)
 
 </div>
 
-> The app features authentic CRT effects including scanlines, film grain, vignette, and flickering animations that create an immersive Silent Hill atmosphere.
+> The app features authentic CRT effects including scanlines, film grain, vignette, and flickering animations that create an immersive Silent Hill atmosphere. The interface adapts seamlessly across all screen sizes and aspect ratios.
 
 ## 🚀 Quick Start
 
