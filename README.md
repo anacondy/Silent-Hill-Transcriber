@@ -36,10 +36,10 @@ This project serves as a bridge between atmospheric horror aesthetics and functi
 <div align="center">
 
 ### Desktop View (1920×1080)
-![Desktop Idle](https://github.com/user-attachments/assets/76d80701-b3ec-4774-8913-d08e5ada8099)
+![Desktop Idle](https://github.com/user-attachments/assets/79fb1c4d-43c4-4e4f-bc02-dfbeb1ef90fd)
 
 ### Mobile View (412×915 - 20:9)
-![Mobile Portrait](https://github.com/user-attachments/assets/c01ab7aa-bb26-4ff7-8b9c-4c7c8e40a534)
+![Mobile Portrait](https://github.com/user-attachments/assets/e5398448-7065-4bc0-bdb2-c415e0b8e381)
 
 </div>
 
@@ -74,11 +74,22 @@ Visit the live site: **[https://anacondy.github.io/Silent-Hill-Transcriber/](htt
 4. Grant microphone permissions when prompted
 5. Launch Voice_Link from your app drawer
 
-#### iOS
-Due to Apple's restrictions, iOS users should:
-1. Visit the [Live Demo](https://anacondy.github.io/Silent-Hill-Transcriber/) in Safari
-2. Tap the Share button → "Add to Home Screen"
-3. Launch the app from your home screen (PWA)
+#### iOS (iPhone/iPad)
+Due to Apple's App Store restrictions, iOS users can install the app as a Progressive Web App (PWA):
+
+1. Visit the [Live Demo](https://anacondy.github.io/Silent-Hill-Transcriber/) in **Safari** (required)
+2. Tap the **Share** button (square with arrow)
+3. Scroll down and tap **"Add to Home Screen"**
+4. Name the app and tap **"Add"**
+5. Launch Voice_Link from your home screen
+6. Grant microphone permissions when prompted
+
+**iOS Features:**
+- ✅ Full-screen standalone mode (no Safari UI)
+- ✅ Optimized for ProMotion 120Hz displays (iPhone 13 Pro+)
+- ✅ Safe area support for notched devices
+- ✅ Smooth animations optimized for iOS
+- ✅ Dynamic viewport height for proper layout
 
 ## 🛠 Development Setup
 
@@ -155,8 +166,8 @@ npm run preview
 
 | Issue | Severity | Platform | Workaround |
 |-------|----------|----------|------------|
-| Firefox Web Speech API | Medium | Firefox (all) | Use Chrome or Safari |
-| iOS Safari audio context | Low | iOS | Tap screen to activate |
+| Firefox Web Speech API | Medium | Firefox (all) | App shows warning; use Chrome or Safari for best experience |
+| iOS Safari audio context | Low | iOS | Tap mic button to activate |
 | Older Android WebView | Low | Android < 10 | Use Chrome app |
 
 ## 🎯 Performance Optimizations
