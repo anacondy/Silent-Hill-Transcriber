@@ -19,13 +19,21 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* iOS-specific: prevent font size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
 }
 
 html, body, #root {
-  height: 100%;
+  /* Fallback for older browsers */
+  height: 100vh;
+  /* Modern browsers with dvh support */
+  height: 100dvh;
   width: 100%;
   overflow: hidden;
   background-color: #0f110c;
+  /* Prevent iOS rubber-banding/bounce effect */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Custom scrollbar for webkit browsers */
@@ -56,13 +64,17 @@ html, body, #root {
   display: none;
 }
 
-/* GPU Acceleration Layer - Critical for 60+ FPS */
+/* GPU Acceleration Layer - Critical for 60+ FPS on all devices including high refresh rate */
 @layer utilities {
   .gpu-accelerated {
     transform: translateZ(0);
+    -webkit-transform: translateZ(0);
     will-change: transform, opacity;
     backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     perspective: 1000px;
+    /* Enable hardware acceleration on iOS */
+    -webkit-perspective: 1000px;
   }
   
   .contain-paint {
@@ -76,6 +88,12 @@ html, body, #root {
   .contain-strict {
     contain: strict;
   }
+  
+  /* Touch manipulation for iOS/Android smooth interactions */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* Font families */
@@ -87,22 +105,23 @@ html, body, #root {
   font-family: 'Syne Mono', monospace;
 }
 
-/* CRT Overlay Effect - Optimized */
+/* CRT Overlay Effect - Optimized and reduced for better readability */
 .crt-overlay {
   background: 
-    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
   background-size: 100% 2px, 3px 100%;
   pointer-events: none;
   will-change: auto;
 }
 
-/* Scanline animation - GPU accelerated */
+/* Scanline animation - GPU accelerated with smooth timing */
 .scanline-bar {
   background: linear-gradient(to bottom, transparent, rgba(124, 143, 75, 0.2), transparent);
   animation: scanline 8s linear infinite;
   will-change: transform;
   transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Dark matter pattern - CSS-based alternative to external texture */
@@ -121,7 +140,7 @@ html, body, #root {
   background-size: 100% 100%, 100% 100%, 100% 100%, 8px 8px;
 }
 
-/* Noise background - Optimized for performance */
+/* Noise background - Optimized for performance on all devices - reduced for better visibility */
 .noise-bg {
   position: fixed;
   top: -50%;
@@ -130,20 +149,59 @@ html, body, #root {
   height: 200%;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.1'/%3E%3C/svg%3E");
   animation: grain 8s steps(10) infinite;
-  opacity: 0.15;
+  opacity: 0.08;
   pointer-events: none;
   z-index: 10;
   will-change: transform;
   transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
-/* Vignette effect */
+/* Vignette effect - reduced intensity for better visibility */
 .vignette {
-  background: radial-gradient(circle, transparent 50%, black 100%);
+  background: radial-gradient(circle, transparent 60%, rgba(0, 0, 0, 0.7) 100%);
   pointer-events: none;
 }
 
-/* High refresh rate optimization */
+/* Transcript area - stable layout to prevent jumping */
+.transcript-area {
+  /* Use flex-grow with fixed constraints to prevent layout shift */
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent layout thrashing */
+  contain: layout style;
+}
+
+/* Transcript text - ensure smooth rendering */
+.transcript-text {
+  /* Prevent text from causing layout shifts */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  /* Enable hardware acceleration for text changes */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Interim text - subtle animation that doesn't cause layout shift */
+.interim-text {
+  display: inline;
+  /* Smooth transition for opacity only */
+  transition: opacity 0.15s ease-out;
+}
+
+/* Cursor blink animation - optimized for high refresh rate */
+.cursor-blink {
+  animation: flicker-fast 1s step-end infinite;
+}
+
+/* Visualizer bar animation */
+.visualizer-bar {
+  transition: height 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* High refresh rate optimization (90Hz, 120Hz displays) */
 @media (prefers-reduced-motion: no-preference) {
   .animate-smooth {
     animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -159,41 +217,46 @@ html, body, #root {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  
+  .noise-bg,
+  .scanline-bar {
+    animation: none !important;
+  }
 }
 
-/* Responsive typography scaling */
+/* Responsive typography scaling - INCREASED for better readability */
 /* Mobile phones (16:9 and 20:9) */
 @media screen and (max-width: 767px) {
   html {
-    font-size: 14px;
+    font-size: 16px;
   }
 }
 
 /* Tablets and small laptops */
 @media screen and (min-width: 768px) and (max-width: 1023px) {
   html {
-    font-size: 15px;
+    font-size: 17px;
   }
 }
 
 /* Standard desktops (16:9) */
 @media screen and (min-width: 1024px) and (max-width: 1919px) {
   html {
-    font-size: 16px;
+    font-size: 18px;
   }
 }
 
 /* Large desktops and ultrawide (1920p+) */
 @media screen and (min-width: 1920px) and (max-width: 2559px) {
   html {
-    font-size: 18px;
+    font-size: 20px;
   }
 }
 
 /* 4K and ultrawide displays */
 @media screen and (min-width: 2560px) {
   html {
-    font-size: 20px;
+    font-size: 22px;
   }
 }
 
@@ -212,16 +275,39 @@ html, body, #root {
   }
 }
 
-/* Safe area for notched devices */
+/* Safe area for notched devices (iPhone X+, Android with notches) */
 @supports (padding: max(0px)) {
   .safe-area-padding {
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-top: max(0px, env(safe-area-inset-top));
   }
 }
 
-/* Animation keyframes */
+/* iOS-specific optimizations */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  html, body, #root {
+    /* Fix iOS 100vh issue */
+    height: -webkit-fill-available;
+    min-height: -webkit-fill-available;
+  }
+  
+  /* Prevent iOS text selection issues */
+  .transcript-text {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  
+  /* Improve touch response on iOS */
+  button {
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Animation keyframes - optimized for smooth playback on all devices */
 @keyframes scanline {
   0% { transform: translateY(-100%) translateZ(0); }
   100% { transform: translateY(100%) translateZ(0); }
@@ -229,14 +315,19 @@ html, body, #root {
 
 @keyframes flicker {
   0% { opacity: 0.95; }
-  5% { opacity: 0.8; }
+  5% { opacity: 0.85; }
   10% { opacity: 0.9; }
-  15% { opacity: 0.3; }
+  15% { opacity: 0.4; }
   20% { opacity: 0.95; }
   50% { opacity: 0.9; }
-  55% { opacity: 0.6; }
+  55% { opacity: 0.7; }
   60% { opacity: 0.95; }
   100% { opacity: 0.95; }
+}
+
+@keyframes flicker-fast {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
 @keyframes grain {
@@ -257,6 +348,18 @@ html, body, #root {
   50% { text-shadow: 0 0 20px #a3bd63, 0 0 30px #a3bd63; }
 }
 
+/* Subtle pulse animation - less jarring than the default */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Slower ping animation for the mic button */
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.3; }
+  75%, 100% { transform: scale(1.5); opacity: 0; }
+}
+
 /* Text selection */
 ::selection {
   background-color: #4a5d23;
@@ -269,10 +372,24 @@ html, body, #root {
   outline-offset: 2px;
 }
 
-/* Touch optimization for mobile */
+/* Touch optimization for mobile - increased touch targets */
 @media (hover: none) and (pointer: coarse) {
   button, a {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Firefox-specific fixes */
+@-moz-document url-prefix() {
+  /* Firefox doesn't support -webkit-overflow-scrolling */
+  .transcript-area {
+    scrollbar-width: thin;
+    scrollbar-color: #3e4a2e #1a1c15;
+  }
+  
+  /* Fix Firefox animation jank */
+  .noise-bg {
+    animation: grain 8s steps(8) infinite;
   }
 }
