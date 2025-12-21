@@ -7,7 +7,7 @@ const isFirefoxBrowser = typeof navigator !== 'undefined' && navigator.userAgent
 // Timing constants for debouncing and restart delays
 const RESTART_DELAY_MS = 100; // Delay before restarting speech recognition
 const TOGGLE_STOP_DELAY_MS = 200; // Delay after stopping before allowing toggle
-const TOGGLE_START_DELAY_MS = 200; // Delay after starting before allowing toggle (was 300, made consistent)
+const TOGGLE_START_DELAY_MS = 200; // Delay after starting before allowing toggle
 
 // Supported languages for translation
 const SUPPORTED_LANGUAGES = [
