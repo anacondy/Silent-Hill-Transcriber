@@ -4,6 +4,11 @@ import { Mic, MicOff, Activity, Wifi, WifiOff, Signal, Battery, BatteryLow, Batt
 // Detect Firefox browser once at module level
 const isFirefoxBrowser = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
+// Timing constants for debouncing and restart delays
+const RESTART_DELAY_MS = 100; // Delay before restarting speech recognition
+const TOGGLE_STOP_DELAY_MS = 200; // Delay after stopping before allowing toggle
+const TOGGLE_START_DELAY_MS = 200; // Delay after starting before allowing toggle (was 300, made consistent)
+
 // Supported languages for translation
 const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', native: 'English' },
@@ -170,12 +175,15 @@ const App = () => {
       recognition.onend = () => {
         // Use ref instead of state to get current value
         // Add a small delay before restarting to prevent audio feedback/buzzing
-        if (isListeningRef.current && !isTogglingRef.current) {
+        const shouldRestart = isListeningRef.current && !isTogglingRef.current;
+        
+        if (shouldRestart) {
           // Clear any existing timeout
           if (restartTimeoutRef.current) {
             clearTimeout(restartTimeoutRef.current);
           }
           restartTimeoutRef.current = setTimeout(() => {
+            // Re-check condition as state may have changed during timeout
             if (isListeningRef.current && !isTogglingRef.current) {
               try {
                 recognition.start();
@@ -185,7 +193,7 @@ const App = () => {
                 setIsListening(false);
               }
             }
-          }, 100); // Small delay to prevent rapid restart buzzing
+          }, RESTART_DELAY_MS);
         } else {
           setIsListening(false);
         }
@@ -367,7 +375,7 @@ const App = () => {
       // Allow toggling again after a short delay
       setTimeout(() => {
         isTogglingRef.current = false;
-      }, 200);
+      }, TOGGLE_STOP_DELAY_MS);
     } else {
       isListeningRef.current = true;
       setIsListening(true);
@@ -389,7 +397,7 @@ const App = () => {
       // Allow toggling again after a short delay
       setTimeout(() => {
         isTogglingRef.current = false;
-      }, 300);
+      }, TOGGLE_START_DELAY_MS);
     }
   }, [isListening, setErrorWithTimeout]);
 
@@ -415,10 +423,10 @@ const App = () => {
     textArea.style.left = "-999999px";
     textArea.style.top = "-999999px";
     document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
+    
     try {
+      textArea.focus();
+      textArea.select();
       const successful = document.execCommand('copy');
       if (successful) {
         setIsCopied(true);
@@ -428,9 +436,10 @@ const App = () => {
       }
     } catch (err) {
       setErrorWithTimeout('Copy failed. Please try again.');
+    } finally {
+      // Ensure cleanup happens regardless of success or failure
+      document.body.removeChild(textArea);
     }
-
-    document.body.removeChild(textArea);
   }, [setErrorWithTimeout]);
 
   const copyToClipboard = useCallback(() => {
