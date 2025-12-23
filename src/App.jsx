@@ -4,6 +4,11 @@ import { Mic, MicOff, Activity, Wifi, WifiOff, Signal, Battery, BatteryLow, Batt
 // Detect Firefox browser once at module level
 const isFirefoxBrowser = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
+// Timing constants for debouncing and restart delays
+const RESTART_DELAY_MS = 100; // Delay before restarting speech recognition
+const TOGGLE_STOP_DELAY_MS = 200; // Delay after stopping before allowing toggle
+const TOGGLE_START_DELAY_MS = 200; // Delay after starting before allowing toggle
+
 // Supported languages for translation
 const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', native: 'English' },
@@ -52,11 +57,34 @@ const App = () => {
   const processedResultsRef = useRef(new Set());
   const lastProcessedTextRef = useRef('');
   const languageMenuRef = useRef(null);
+  const restartTimeoutRef = useRef(null);
+  const isTogglingRef = useRef(false);
+  const errorTimeoutRef = useRef(null);
+
+  // Helper function to set error with auto-clear
+  const setErrorWithTimeout = useCallback((message, duration = 5000) => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+    setError(message);
+    errorTimeoutRef.current = setTimeout(() => {
+      setError('');
+    }, duration);
+  }, []);
 
   // Keep ref in sync with state
   useEffect(() => {
     isListeningRef.current = isListening;
   }, [isListening]);
+
+  // Cleanup error timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Battery Status API
   useEffect(() => {
@@ -146,12 +174,26 @@ const App = () => {
 
       recognition.onend = () => {
         // Use ref instead of state to get current value
-        if (isListeningRef.current) {
-          try {
-            recognition.start();
-          } catch (e) {
-            setIsListening(false);
+        // Add a small delay before restarting to prevent audio feedback/buzzing
+        const shouldRestart = isListeningRef.current && !isTogglingRef.current;
+        
+        if (shouldRestart) {
+          // Clear any existing timeout
+          if (restartTimeoutRef.current) {
+            clearTimeout(restartTimeoutRef.current);
           }
+          restartTimeoutRef.current = setTimeout(() => {
+            // Re-check condition as state may have changed during timeout
+            if (isListeningRef.current && !isTogglingRef.current) {
+              try {
+                recognition.start();
+              } catch (e) {
+                // If restart fails, update state
+                isListeningRef.current = false;
+                setIsListening(false);
+              }
+            }
+          }, RESTART_DELAY_MS);
         } else {
           setIsListening(false);
         }
@@ -199,40 +241,39 @@ const App = () => {
       recognition.onerror = (event) => {
         console.error('Speech recognition error', event.error);
         if (event.error === 'not-allowed') {
-          setError('Microphone access denied.');
+          setErrorWithTimeout('Microphone access denied. Please allow microphone access and try again.');
+          isListeningRef.current = false;
           setIsListening(false);
         } else if (event.error === 'no-speech') {
-          // Don't show error for no-speech, just continue
-          if (isFirefoxBrowser && isListeningRef.current) {
-            try {
-              recognition.start();
-            } catch (e) {
-              // Ignore
-            }
-          }
+          // Don't show error for no-speech, just continue listening
+          // The onend handler will restart with delay if needed
         } else if (event.error === 'aborted') {
-          // Handle abort gracefully
-          if (isListeningRef.current) {
-            try {
-              recognition.start();
-            } catch (e) {
-              setIsListening(false);
-            }
-          }
+          // Handle abort gracefully - let onend handle the restart
+          // This prevents double-restart that can cause buzzing
+        } else if (event.error === 'audio-capture') {
+          setErrorWithTimeout('Microphone not available. Please check your audio settings.');
+          isListeningRef.current = false;
+          setIsListening(false);
+        } else if (event.error === 'network') {
+          // Network error - continue to listen, onend will handle restart
         }
       };
 
       recognitionRef.current = recognition;
     } else {
-      setError('Browser not supported. Use Chrome or Safari.');
+      setErrorWithTimeout('Browser not supported. Please use Chrome, Edge, or Safari.', 10000);
     }
 
     return () => {
+      // Clear any pending restart timeout
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+      }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
     };
-  }, []);
+  }, [setErrorWithTimeout]);
 
   // Scroll to bottom on new text - optimized with requestAnimationFrame
   useEffect(() => {
@@ -310,10 +351,31 @@ const App = () => {
   }, [transcript, targetLanguage, translateText]);
 
   const toggleListening = useCallback(() => {
+    // Prevent rapid toggling which can cause buzzing/audio feedback
+    if (isTogglingRef.current) {
+      return;
+    }
+    
+    isTogglingRef.current = true;
+    
+    // Clear any pending restart timeout
+    if (restartTimeoutRef.current) {
+      clearTimeout(restartTimeoutRef.current);
+      restartTimeoutRef.current = null;
+    }
+    
     if (isListening) {
       isListeningRef.current = false;
       setIsListening(false);
-      recognitionRef.current?.stop();
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {
+        // Ignore stop errors
+      }
+      // Allow toggling again after a short delay
+      setTimeout(() => {
+        isTogglingRef.current = false;
+      }, TOGGLE_STOP_DELAY_MS);
     } else {
       isListeningRef.current = true;
       setIsListening(true);
@@ -324,9 +386,20 @@ const App = () => {
       lastResultTimeRef.current = 0;
       processedResultsRef.current.clear();
       lastProcessedTextRef.current = '';
-      recognitionRef.current?.start();
+      try {
+        recognitionRef.current?.start();
+      } catch (e) {
+        // If start fails, reset state
+        isListeningRef.current = false;
+        setIsListening(false);
+        setErrorWithTimeout('Failed to start microphone. Please try again.');
+      }
+      // Allow toggling again after a short delay
+      setTimeout(() => {
+        isTogglingRef.current = false;
+      }, TOGGLE_START_DELAY_MS);
     }
-  }, [isListening]);
+  }, [isListening, setErrorWithTimeout]);
 
   const handleLanguageSelect = useCallback((langCode) => {
     // If selecting the same language or null, disable translation
@@ -342,6 +415,32 @@ const App = () => {
   const handleTranslateClick = useCallback(() => {
     setShowLanguageMenu((prev) => !prev);
   }, []);
+
+  const fallbackCopy = useCallback((text) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    
+    try {
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } else {
+        setErrorWithTimeout('Copy failed. Please try again.');
+      }
+    } catch (err) {
+      setErrorWithTimeout('Copy failed. Please try again.');
+    } finally {
+      // Ensure cleanup happens regardless of success or failure
+      document.body.removeChild(textArea);
+    }
+  }, [setErrorWithTimeout]);
 
   const copyToClipboard = useCallback(() => {
     if (!transcript && !interimTranscript) return;
@@ -361,32 +460,7 @@ const App = () => {
     } else {
       fallbackCopy(textToCopy);
     }
-  }, [transcript, interimTranscript, translatedTranscript]);
-
-  const fallbackCopy = (text) => {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    textArea.style.top = "-999999px";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    try {
-      const successful = document.execCommand('copy');
-      if (successful) {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      } else {
-        setError('Copy failed.');
-      }
-    } catch (err) {
-      setError('Copy failed.');
-    }
-
-    document.body.removeChild(textArea);
-  };
+  }, [transcript, interimTranscript, translatedTranscript, fallbackCopy]);
 
   // Get battery icon based on level and charging state
   const getBatteryIcon = () => {
